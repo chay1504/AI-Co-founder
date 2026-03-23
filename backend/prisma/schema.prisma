@@ -1,0 +1,164 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Table: teams
+model teams {
+  id              BigInt    @id @default(autoincrement())
+  name            String    @db.VarChar(255)
+  slug            String    @unique @db.VarChar(255)
+  company_id      String
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+  updated_at      DateTime  @updatedAt @db.Timestamp(6)
+  is_active       Boolean   @default(true)
+  
+  // Relationships
+  users           users[]
+  projects        projects[]
+  work_signals    work_signals[]
+  health_snapshots health_score_snapshots[]
+  blockers        blockers[]
+  
+  @@map("teams")
+}
+
+// Table: users
+model users {
+  id              BigInt    @id @default(autoincrement())
+  team_id         BigInt    @db.BigInt
+  email           String    @unique @db.VarChar(255)
+  full_name       String?   @db.VarChar(255)
+  role            String?   @db.VarChar(50)
+  slack_user_id   String?   @db.VarChar(255)
+  github_username String?   @db.VarChar(255)
+  figma_user_id   String?   @db.VarChar(255)
+  is_active       Boolean   @default(true)
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+  updated_at      DateTime  @updatedAt @db.Timestamp(6)
+  
+  // Relationships
+  team            teams     @relation(fields: [team_id], references: [id])
+  projects        projects[]
+  work_signals    work_signals[]
+  blockers        blockers[]
+  
+  @@map("users")
+}
+
+// Table: projects
+model projects {
+  id                    BigInt    @id @default(autoincrement())
+  team_id               BigInt    @db.BigInt
+  name                  String    @db.VarChar(255)
+  description           String?   @db.Text
+  status                String?   @db.VarChar(50) // 'planning', 'in_progress', 'blocked', 'completed'
+  owner_id              BigInt?   @db.BigInt
+  start_date            DateTime? @db.Date
+  deadline              DateTime? @db.Date
+  completion_percentage Int       @default(0)
+  created_at            DateTime  @default(now()) @db.Timestamp(6)
+  updated_at            DateTime  @updatedAt @db.Timestamp(6)
+  
+  // Relationships
+  team                  teams         @relation(fields: [team_id], references: [id])
+  owner                 users?        @relation(fields: [owner_id], references: [id])
+  dependencies_from     project_dependencies[] @relation("from")
+  dependencies_to       project_dependencies[] @relation("to")
+  work_signals          work_signals[]
+  blockers              blockers[]
+  
+  @@map("projects")
+}
+
+// Table: project_dependencies
+model project_dependencies {
+  id                    BigInt    @id @default(autoincrement())
+  project_id            BigInt    @db.BigInt
+  depends_on_project_id BigInt    @db.BigInt
+  created_at            DateTime  @default(now()) @db.Timestamp(6)
+  
+  // Relationships
+  project               projects  @relation("from", fields: [project_id], references: [id])
+  depends_on            projects  @relation("to", fields: [depends_on_project_id], references: [id])
+  
+  @@map("project_dependencies")
+}
+
+// Table: work_signals
+model work_signals {
+  id          BigInt    @id @default(autoincrement())
+  team_id     BigInt    @db.BigInt
+  user_id     BigInt    @db.BigInt
+  source      String    @db.VarChar(50)  // 'slack', 'github', 'google_workspace', 'figma', 'jira', 'zoom'
+  signal_type String    @db.VarChar(100) // 'message', 'commit', 'document_edit', 'design_update', 'ticket_created', 'meeting'
+  project_id  BigInt?   @db.BigInt
+  metadata    Json?                      // Flexible data storage
+  timestamp   DateTime  @default(now()) @db.Timestamp(6)
+  
+  // Relationships
+  team        teams     @relation(fields: [team_id], references: [id])
+  user        users     @relation(fields: [user_id], references: [id])
+  project     projects? @relation(fields: [project_id], references: [id])
+  
+  @@map("work_signals")
+}
+
+// Table: health_score_snapshots
+model health_score_snapshots {
+  id                   BigInt    @id @default(autoincrement())
+  team_id              BigInt    @db.BigInt
+  productivity_score   Decimal   @db.Decimal(5, 2)
+  collaboration_score  Decimal   @db.Decimal(5, 2)
+  velocity_score       Decimal   @db.Decimal(5, 2)
+  overall_score        Decimal   @db.Decimal(5, 2)
+  snapshot_date        DateTime  @db.Date
+  created_at           DateTime  @default(now()) @db.Timestamp(6)
+  
+  // Relationships
+  team                 teams     @relation(fields: [team_id], references: [id])
+  
+  @@map("health_score_snapshots")
+}
+
+// Table: blockers
+model blockers {
+  id          BigInt    @id @default(autoincrement())
+  team_id     BigInt    @db.BigInt
+  project_id  BigInt    @db.BigInt
+  title       String    @db.VarChar(255)
+  description String?   @db.Text
+  owner_id    BigInt?   @db.BigInt
+  severity    String?   @db.VarChar(50)  // 'low', 'medium', 'high', 'critical'
+  status      String    @default("open") @db.VarChar(50) // 'open', 'in_progress', 'resolved'
+  days_stalled Int      @default(0)
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  updated_at  DateTime  @updatedAt @db.Timestamp(6)
+  
+  // Relationships
+  team        teams     @relation(fields: [team_id], references: [id])
+  project     projects  @relation(fields: [project_id], references: [id])
+  owner       users?    @relation(fields: [owner_id], references: [id])
+  
+  @@map("blockers")
+}
+
+// Table: api_sync_log (to track sync health as per roadmap)
+model api_sync_log {
+  id              BigInt    @id @default(autoincrement())
+  team_id         BigInt    @db.BigInt
+  source          String    @db.VarChar(50)
+  last_sync_at    DateTime? 
+  next_sync_at    DateTime?
+  sync_status     String    @db.VarChar(50)
+  error_message   String?   @db.Text
+  created_at      DateTime  @default(now())
+  
+  @@map("api_sync_log")
+}
