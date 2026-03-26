@@ -84,9 +84,9 @@ router.post('/integrations/sync/manual/:teamId', authMiddleware, async (req: Req
 router.post('/admin/sync-all-teams', authMiddleware, async (req: Request, res: Response) => {
   try {
     const agenda = getAgenda();
-    await agenda.now('sync-slack-messages');
-    await agenda.now('sync-github-commits');
-    await agenda.now('calculate-health-score');
+    await agenda.now('sync-slack-messages', {});
+    await agenda.now('sync-github-commits', {});
+    await agenda.now('calculate-health-score', {});
     res.json({ success: true, data: { message: 'All sync jobs triggered' }, error: null });
   } catch (error) {
     res.status(500).json({ success: false, data: null, error: 'Failed' });
