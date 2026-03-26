@@ -1,6 +1,4 @@
-// src/jobs/healthScoreCalc.job.ts
-
-import { Agenda } from 'agenda';
+import { Agenda, Job } from 'agenda';
 import { prisma } from '@/utils/db';
 import { healthScoreService } from '@/services/healthScore.service';
 
@@ -9,7 +7,7 @@ import { healthScoreService } from '@/services/healthScore.service';
  * This job runs daily (2 AM UTC as per prompt) to compute snapshots.
  */
 export const registerHealthScoreCalcJob = (agenda: Agenda) => {
-  agenda.define('calculate-health-score', async (job) => {
+  agenda.define('calculate-health-score', async (job: Job) => {
     try {
       console.log('🔄 Running Health Score Calculation job...');
       

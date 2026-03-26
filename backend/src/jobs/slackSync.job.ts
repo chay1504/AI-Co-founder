@@ -1,6 +1,4 @@
-// src/jobs/slackSync.job.ts
-
-import { Agenda } from 'agenda';
+import { Agenda, Job } from 'agenda';
 import { prisma } from '@/utils/db';
 import { slackService } from '@/services/slack.service';
 
@@ -9,7 +7,7 @@ import { slackService } from '@/services/slack.service';
  * This job runs hourly to fetch latest messages from Slack.
  */
 export const registerSlackSyncJob = (agenda: Agenda) => {
-  agenda.define('sync-slack-messages', async (job) => {
+  agenda.define('sync-slack-messages', async (job: Job) => {
     try {
       console.log('🔄 Running Slack Sync job...');
       

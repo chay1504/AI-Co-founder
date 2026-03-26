@@ -1,6 +1,4 @@
-// src/jobs/githubSync.job.ts
-
-import { Agenda } from 'agenda';
+import { Agenda, Job } from 'agenda';
 import { prisma } from '@/utils/db';
 import { githubService } from '@/services/github.service';
 
@@ -9,7 +7,7 @@ import { githubService } from '@/services/github.service';
  * This job runs hourly to fetch latest activity from GitHub.
  */
 export const registerGithubSyncJob = (agenda: Agenda) => {
-  agenda.define('sync-github-commits', async (job) => {
+  agenda.define('sync-github-commits', async (job: Job) => {
     try {
       console.log('🔄 Running GitHub Sync job...');
       
