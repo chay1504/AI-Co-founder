@@ -13,8 +13,14 @@ RUN npm install
 # Copy the rest of the application
 COPY . .
 
-# Generate Prisma client
+# Create a dummy .env for Prisma to generate without database connection
+RUN echo "DATABASE_URL=\"postgresql://user:password@localhost:5432/db\"" > .env
+
+# Generate Prisma client (uses dummy .env)
 RUN npx prisma generate
+
+# Remove dummy .env - real one will be provided at runtime
+RUN rm .env
 
 # Build the application
 RUN npm run build
