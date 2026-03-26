@@ -15,13 +15,11 @@ yarn-debug.log*
 yarn-error.log*
 *.log
 
-# Sensitive files
-.env
+# Sensitive files (keep .env.local variants ignored, allow .env with placeholder values)
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-backend/.env
 backend/.env.local
 
 # OS files
